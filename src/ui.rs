@@ -1,3 +1,5 @@
+use crate::app::{render_content, DisplayData};
+use crate::types::Mode;
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style},
@@ -5,47 +7,45 @@ use ratatui::{
     widgets::{Block, Borders, Clear, Paragraph},
     Frame,
 };
-use crate::app::App;
-use crate::types::Mode;
 
-pub fn draw(f: &mut Frame, app: &App) {
+pub fn draw(f: &mut Frame, data: &DisplayData) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(1)])
         .split(f.size());
 
-    // URL Bar
     f.render_widget(
-        Paragraph::new(app.current_url.as_str())
+        Paragraph::new(data.current_url.as_str())
             .block(Block::default().borders(Borders::ALL).title(" Voyager URL ")),
-        chunks[0]
+        chunks[0],
     );
 
-    // Main Content
     f.render_widget(
-        Paragraph::new(app.render_content())
+        Paragraph::new(render_content(data))
             .block(Block::default().borders(Borders::LEFT | Borders::RIGHT))
-            .scroll((app.scroll, 0)),
-        chunks[1]
+            .scroll((data.scroll, 0)),
+        chunks[1],
     );
 
-    // Status Bar
-    let status_text = match app.mode {
-        Mode::Command => format!(":{}", app.command_buffer),
+    let status_text = match data.mode {
+        Mode::Command => format!(":{}", data.command_buffer),
         Mode::Normal => format!(
             " {} | Link [{}]: {}",
-            app.status,
-            app.selected_link_idx,
-            if app.links.is_empty() { "" } else { &app.links[app.selected_link_idx].url }
+            data.status,
+            data.selected_link_idx,
+            if data.links.is_empty() {
+                ""
+            } else {
+                &data.links[data.selected_link_idx].url
+            }
         ),
     };
     f.render_widget(
         Paragraph::new(status_text).style(Style::default().bg(Color::White).fg(Color::Black)),
-        chunks[2]
+        chunks[2],
     );
 
-    // Image Popup
-    if let Some(ref aa) = app.image_preview {
+    if let Some(ref aa) = data.image_preview {
         let area = centered_rect(80, 80, f.size());
         f.render_widget(Clear, area);
         let aa_lines: Vec<Line> = aa.iter().map(|s| Line::from(s.clone())).collect();
@@ -53,7 +53,7 @@ pub fn draw(f: &mut Frame, app: &App) {
             Paragraph::new(aa_lines)
                 .block(Block::default().borders(Borders::ALL).title(" Image AA Preview "))
                 .style(Style::default().bg(Color::Black)),
-            area
+            area,
         );
     }
 }
